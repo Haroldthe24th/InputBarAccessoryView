@@ -22,7 +22,7 @@ Once you have your Swift package set up, adding InputBarAccessoryView as a depen
 
 ```
 dependencies: [
-    .package(url: "https://github.com/nathantannar4/InputBarAccessoryView.git", .upToNextMajor(from: "6.0.0"))
+    .package(url: "https://github.com/Haroldthe24th/InputBarAccessoryView.git", .upToNextMajor(from: "6.0.0"))
 ]
 ```
 You can also add it via Xcode SPM editor with URL:
