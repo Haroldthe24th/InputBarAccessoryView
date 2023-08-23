@@ -24,16 +24,16 @@
 //
 //  Created by Nathan Tannar on 10/4/17.
 //
-
+// NOTE: This file is the only file that was changed when I copied this (Randy)
 import UIKit
 
 open class AttachmentManager: NSObject, InputPlugin {
-    
+    	
     public enum Attachment {
         case image(UIImage)
         case url(URL)
-        case data(Data)
-        
+        case data(data: Data, mimeType: String, thumbnail: UIImage?) // Add mimeType and thumbnailImage 
+
         @available(*, deprecated, message: ".other(AnyObject) has been depricated as of 2.0.0")
         case other(AnyObject)
     }
@@ -94,15 +94,21 @@ open class AttachmentManager: NSObject, InputPlugin {
     ///
     /// - Parameter object: The object to append
     @discardableResult
+    open func handleDataInput(mediaAttachement: (data: Data, mimeType: String, thumbnail: UIImage?)) -> Bool {
+        let attachment: Attachment = .data(data: mediaAttachement.data, mimeType: mediaAttachement.mimeType, thumbnail: mediaAttachement.thumbnail)
+        
+        insertAttachment(attachment, at: attachments.count)
+        return true
+    }
     open func handleInput(of object: AnyObject) -> Bool {
         let attachment: Attachment
         if let image = object as? UIImage {
             attachment = .image(image)
         } else if let url = object as? URL {
             attachment = .url(url)
-        } else if let data = object as? Data {
-            attachment = .data(data)
         } else {
+            print("Made our way here =>")
+
             return false
         }
         
@@ -191,6 +197,23 @@ extension AttachmentManager: UICollectionViewDataSource, UICollectionViewDelegat
                 cell.imageView.tintColor = tintColor
                 cell.deleteButton.backgroundColor = tintColor
                 return cell
+            case .data(let data, let mimeType, let thumbnailImage):
+                // do stuff like attaching the data and and the mimetype and other shizz
+                guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageAttachmentCell.reuseIdentifier, for: indexPath) as? ImageAttachmentCell else {
+                    fatalError()
+                }
+                cell.attachment = attachment
+                cell.indexPath = indexPath
+                cell.manager = self
+                cell.imageView.image = thumbnailImage
+                cell.imageView.tintColor = tintColor
+                cell.deleteButton.backgroundColor = tintColor
+                print("Data: \(data)")
+                   print("MIME Type: \(mimeType)")
+                   if let thumbnail = thumbnailImage {
+                       print("Thumbnail Image: \(thumbnail)")
+                   }
+               return cell
             default:
                 return collectionView.dequeueReusableCell(withReuseIdentifier: AttachmentCell.reuseIdentifier, for: indexPath) as! AttachmentCell
             }
@@ -202,21 +225,14 @@ extension AttachmentManager: UICollectionViewDataSource, UICollectionViewDelegat
     
     final public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
+        if let customSize = self.dataSource?.attachmentManager(self, sizeFor: self.attachments[indexPath.row], at: indexPath.row){
+            return customSize
+        }
+        
         var height = attachmentView.intrinsicContentHeight
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             height -= (layout.sectionInset.bottom + layout.sectionInset.top + collectionView.contentInset.top + collectionView.contentInset.bottom)
         }
-        
-        // Prevent out of range error when the AttachmentCell has not been added the attachment array
-        if indexPath.row == attachments.count && showAddAttachmentCell {
-            return CGSize(width: height, height: height)
-        }
-        
-        let attachment = self.attachments[indexPath.row]
-        if let customSize = self.dataSource?.attachmentManager(self, sizeFor: attachment, at: indexPath.row){
-            return customSize
-        }
-        
         return CGSize(width: height, height: height)
     }
     
